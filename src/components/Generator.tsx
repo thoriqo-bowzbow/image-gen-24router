@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { BrutalTextarea, BrutalButton } from '@/components/NeoBrutalistUI';
 import { ModelSelector } from '@/components/ModelSelector';
 import { ParamPanel } from '@/components/ParamPanel';
@@ -26,6 +26,14 @@ export function Generator() {
   const [prompt, setPrompt] = useState('');
   const [enhancedPrompt, setEnhancedPrompt] = useState('');
   const [params, setParams] = useState<DefaultParams>(getDefaultParams({ id: '', owned_by: '', object: '' }));
+
+  useEffect(() => {
+    if (models.length > 0 && !selectedModel) {
+      setSelectedModel(models[0].id);
+      setSelectedModelInfo(models[0]);
+      setParams(getDefaultParams(models[0]));
+    }
+  }, [models, selectedModel]);
 
   const handleModelSelect = useCallback((modelId: string, info: ModelInfo) => {
     setSelectedModel(modelId);

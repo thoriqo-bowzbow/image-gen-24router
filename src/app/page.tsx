@@ -1,10 +1,6 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-
-const Generator = dynamic(() => import('@/components/Generator').then((m) => ({ default: m.Generator })), {
-  ssr: false,
-});
+import { Generator } from '@/components/Generator';
 
 export default function Home() {
   return <Generator />;

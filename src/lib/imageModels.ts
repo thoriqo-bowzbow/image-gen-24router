@@ -2,6 +2,16 @@ import type { ModelInfo } from './api';
 
 export const IMAGE_MODELS: ModelInfo[] = [
   {
+    id: 'cf/@cf/black-forest-labs/flux-1-schnell',
+    object: 'model',
+    owned_by: 'cloudflare',
+    description: 'FLUX.1 Schnell — ultra fast generation',
+    max_image_size: '1024x1024',
+    step_range: [1, 4],
+    cfg_range: [1, 5],
+    max_batch: 8,
+  },
+  {
     id: 'cf/@cf/black-forest-labs/flux-2-klein-9b',
     object: 'model',
     owned_by: 'cloudflare',
@@ -50,16 +60,6 @@ export const IMAGE_MODELS: ModelInfo[] = [
     step_range: [1, 8],
     cfg_range: [1, 10],
     max_batch: 4,
-  },
-  {
-    id: 'cf/@cf/black-forest-labs/flux-1-schnell',
-    object: 'model',
-    owned_by: 'cloudflare',
-    description: 'FLUX.1 Schnell — ultra fast generation',
-    max_image_size: '1024x1024',
-    step_range: [1, 4],
-    cfg_range: [1, 5],
-    max_batch: 8,
   },
   {
     id: 'cf/@cf/bytedance/stable-diffusion-xl-lightning',
