@@ -22,6 +22,11 @@
   box-sizing: border-box;
 }
 
+html {
+  /* Skala global UI: text-xs (0.75rem) jadi 14px, ukuran lain ikut proporsional */
+  font-size: 18.75px;
+}
+
 html, body {
   margin: 0;
   padding: 0;
