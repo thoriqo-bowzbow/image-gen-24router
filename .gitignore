@@ -40,6 +40,9 @@ CLAUDE.md
 # runtime provider config (berisi API key)
 /data/
 
+# command code (data sesi tool lokal)
+/.commandcode/
+
 # standalone build output
 .next/
 standalone/
