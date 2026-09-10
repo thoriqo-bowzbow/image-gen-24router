@@ -14,7 +14,6 @@ export function useGallery() {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
     try {
       const all = await getAllEntries();
       setEntries(all);

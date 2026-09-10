@@ -37,6 +37,9 @@ yarn-error.log*
 AGENTS.md
 CLAUDE.md
 
+# runtime provider config (berisi API key)
+/data/
+
 # standalone build output
 .next/
 standalone/

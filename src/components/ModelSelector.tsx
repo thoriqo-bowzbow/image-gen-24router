@@ -54,7 +54,7 @@ export function ModelSelector({
         </div>
       </div>
       {models.length === 0 && !loading && (
-        <p className="text-xs text-[var(--muted)]">Tidak ada model image ditemukan. Cek koneksi ke 24Router.</p>
+        <p className="text-xs text-[var(--muted)]">Tidak ada model. Tambahkan model provider di halaman Settings.</p>
       )}
     </div>
   );

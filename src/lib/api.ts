@@ -1,4 +1,6 @@
-const PROXY_BASE = '/api/proxy';
+import type { ProviderSummary } from '@/lib/providers/types';
+
+export type { ProviderSummary };
 
 export interface ModelInfo {
   id: string;
@@ -37,30 +39,44 @@ export interface GenerateResponse {
   data: ImageResult[];
 }
 
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const url = `${PROXY_BASE}${path}`;
+export interface ProviderInputPayload {
+  name?: string;
+  baseUrl?: string;
+  apiKey?: string;
+  enhanceModel?: string;
+  models?: ModelInfo[];
+  setActive?: boolean;
+}
+
+export interface TestResult {
+  ok: boolean;
+  status?: number;
+  message: string;
+}
+
+interface ProvidersListResponse {
+  activeProviderId: string | null;
+  providers: ProviderSummary[];
+}
+
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     ...options,
   });
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`API ${res.status}: ${text.slice(0, 200)}`);
+    const body = await res.json().catch(() => null);
+    const message =
+      body && typeof body === 'object' && 'error' in body
+        ? String((body as Record<string, unknown>).error)
+        : await res.text().catch(() => '');
+    throw new Error(`API ${res.status}: ${message.slice(0, 300)}`);
   }
   return res.json();
 }
 
-export async function fetchModels(): Promise<ModelInfo[]> {
-  try {
-    const data = await apiFetch<{ data: ModelInfo[] }>('/v1/models');
-    return data.data || [];
-  } catch {
-    return [];
-  }
-}
-
 export async function generateImage(params: ImageGenerateParams): Promise<GenerateResponse> {
-  return apiFetch<GenerateResponse>('/v1/images/generations', {
+  return apiFetch<GenerateResponse>('/api/generate', {
     method: 'POST',
     body: JSON.stringify(params),
   });
@@ -72,7 +88,14 @@ export async function enhancePrompt(prompt: string): Promise<string> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt }),
   });
-  if (!res.ok) throw new Error(`Enhance failed: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const message =
+      body && typeof body === 'object' && 'error' in body
+        ? String((body as Record<string, unknown>).error)
+        : `Enhance failed: ${res.status}`;
+    throw new Error(message);
+  }
   const data = await res.json();
   return data.enhanced;
 }
@@ -90,3 +113,38 @@ export async function saveImageToServer(
   const data = await res.json();
   return data.url;
 }
+
+export const providersApi = {
+  async list(): Promise<ProvidersListResponse> {
+    return apiFetch<ProvidersListResponse>('/api/providers');
+  },
+
+  async create(input: ProviderInputPayload): Promise<ProviderSummary> {
+    const data = await apiFetch<{ provider: ProviderSummary }>('/api/providers', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+    return data.provider;
+  },
+
+  async update(id: string, input: ProviderInputPayload): Promise<ProviderSummary> {
+    const data = await apiFetch<{ provider: ProviderSummary }>(`/api/providers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+    return data.provider;
+  },
+
+  async remove(id: string): Promise<void> {
+    await apiFetch<{ ok: boolean }>(`/api/providers/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async test(input: { providerId?: string; baseUrl?: string; apiKey?: string }): Promise<TestResult> {
+    return apiFetch<TestResult>('/api/providers/test', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+};

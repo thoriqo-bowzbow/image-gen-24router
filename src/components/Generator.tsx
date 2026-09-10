@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { BrutalTextarea, BrutalButton } from '@/components/NeoBrutalistUI';
 import { ModelSelector } from '@/components/ModelSelector';
 import { ParamPanel } from '@/components/ParamPanel';
@@ -16,29 +16,27 @@ import { Wand2, Loader2, AlertCircle } from 'lucide-react';
 import type { ModelInfo } from '@/lib/api';
 
 export function Generator() {
-  const { models, loading: modelsLoading, refresh: refreshModels } = useModels();
+  const { models, loading: modelsLoading, error: modelsError, refresh: refreshModels } = useModels();
   const gen = useGeneration();
   const gallery = useGallery();
   const promptRef = useRef<HTMLTextAreaElement>(null);
 
-  const [selectedModel, setSelectedModel] = useState<string>('');
-  const [selectedModelInfo, setSelectedModelInfo] = useState<ModelInfo | null>(null);
+  const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [prompt, setPrompt] = useState('');
   const [enhancedPrompt, setEnhancedPrompt] = useState('');
-  const [params, setParams] = useState<DefaultParams>(getDefaultParams({ id: '', owned_by: '', object: '' }));
+  const [paramsOverride, setParamsOverride] = useState<DefaultParams | null>(null);
 
-  useEffect(() => {
-    if (models.length > 0 && !selectedModel) {
-      setSelectedModel(models[0].id);
-      setSelectedModelInfo(models[0]);
-      setParams(getDefaultParams(models[0]));
-    }
-  }, [models, selectedModel]);
+  // Turunkan dari daftar model — otomatis memilih model pertama saat daftar termuat
+  const activeModel = models.find((m) => m.id === selectedModelId) ?? models[0] ?? null;
+  const selectedModel = activeModel?.id ?? '';
+  const selectedModelInfo = activeModel;
+  const params =
+    paramsOverride ??
+    (activeModel ? getDefaultParams(activeModel) : getDefaultParams({ id: '', owned_by: '', object: '' }));
 
-  const handleModelSelect = useCallback((modelId: string, info: ModelInfo) => {
-    setSelectedModel(modelId);
-    setSelectedModelInfo(info);
-    setParams(getDefaultParams(info));
+  const handleModelSelect = useCallback((modelId: string, _info: ModelInfo) => {
+    setSelectedModelId(modelId);
+    setParamsOverride(null);
   }, []);
 
   const handleGenerate = useCallback(async () => {
@@ -56,10 +54,8 @@ export function Generator() {
     (data: { prompt: string; enhancedPrompt: string; model: string; params: DefaultParams }) => {
       setPrompt(data.prompt);
       setEnhancedPrompt(data.enhancedPrompt);
-      setSelectedModel(data.model);
-      setParams(data.params);
-      const mi = models.find((m) => m.id === data.model);
-      if (mi) setSelectedModelInfo(mi);
+      setSelectedModelId(data.model);
+      setParamsOverride(data.params);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     [models]
@@ -92,9 +88,24 @@ export function Generator() {
           <span className="bg-[var(--fg)] text-[var(--bg)] px-2 py-1">TEXT → IMAGE</span>
         </h1>
         <p className="text-xs text-[var(--muted)] font-mono">
-          Generate via 24Router • Neo-Brutalist • Anti-AI-Slop
+          OpenAI-compatible • Multi-provider • Neo-Brutalist
         </p>
       </div>
+
+      {!modelsLoading && models.length === 0 && (
+        <div className="brutal-card !border-[var(--accent)] flex items-start gap-2" role="alert">
+          <AlertCircle size={16} className="text-[var(--accent)] flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-bold">Belum siap generate</p>
+            <p className="text-xs text-[var(--muted)]">
+              {modelsError || 'Tidak ada model tersedia.'}{' '}
+              <a href="/settings" className="underline underline-offset-2 font-bold">
+                Buka Settings →
+              </a>
+            </p>
+          </div>
+        </div>
+      )}
 
       <ModelSelector
         models={models}
@@ -121,7 +132,7 @@ export function Generator() {
       </div>
 
       {selectedModelInfo && (
-        <ParamPanel model={selectedModelInfo} params={params} onChange={setParams} />
+        <ParamPanel model={selectedModelInfo} params={params} onChange={setParamsOverride} />
       )}
 
       <BrutalButton
