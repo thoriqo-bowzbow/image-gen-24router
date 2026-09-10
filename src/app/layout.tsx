@@ -25,39 +25,39 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id" className={`scanlines ${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="min-h-screen">
         <header className="border-b-[var(--border-w)] border-[var(--border)] bg-[var(--surface)]">
-          <nav className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-            <Link href="/" className="font-bold font-ui text-lg tracking-tight">
+          <nav className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+            <Link href="/" className="font-bold font-ui text-base sm:text-lg tracking-tight">
               T2I<span className="text-[var(--accent)]">:</span>BRUTAL
             </Link>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 sm:gap-6">
               <Link
                 href="/"
-                className="text-sm font-mono underline underline-offset-4"
+                className="text-xs sm:text-sm font-mono underline underline-offset-4"
               >
                 Generate
               </Link>
               <Link
                 href="/gallery"
-                className="text-sm font-mono underline underline-offset-4"
+                className="text-xs sm:text-sm font-mono underline underline-offset-4"
               >
                 Gallery
               </Link>
               <Link
                 href="/settings"
-                className="text-sm font-mono underline underline-offset-4"
+                className="text-xs sm:text-sm font-mono underline underline-offset-4"
               >
                 Settings
               </Link>
               <Link
                 href="/docs"
-                className="text-sm font-mono underline underline-offset-4"
+                className="text-xs sm:text-sm font-mono underline underline-offset-4"
               >
                 Docs
               </Link>
             </div>
           </nav>
         </header>
-        <main className="max-w-7xl mx-auto px-6 py-10">{children}</main>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">{children}</main>
       </body>
     </html>
   );

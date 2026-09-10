@@ -428,7 +428,7 @@ export function SettingsView() {
                       <BrutalBadge variant="outline">{p.id}</BrutalBadge>
                     )}
                   </div>
-                  <span className="text-xs font-mono text-[var(--muted)]">{p.baseUrl}</span>
+                  <span className="text-xs font-mono text-[var(--muted)] break-all">{p.baseUrl}</span>
                   <span className="text-xs font-mono text-[var(--muted)]">
                     {p.protocol} · API key: {p.hasApiKey ? 'tersimpan' : 'tidak ada'}
                     {p.accountId ? ` · account: ${p.accountId.slice(0, 8)}…` : ''} · {p.models.length} model

@@ -140,7 +140,7 @@ export function Generator() {
 
       <div className="flex flex-col gap-3">
         <hr className="brutal-divider" />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-bold uppercase tracking-wider mr-1">Kualitas</span>
           <BrutalButton
             size="sm"
