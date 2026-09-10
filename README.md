@@ -1,6 +1,6 @@
 # ImageGen — Multi-Provider Text-to-Image
 
-![CI](https://github.com/thoriqo-bowzbow/image-gen-24router/actions/workflows/ci.yml/badge.svg) ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![CI](https://github.com/thoriqo-bowzbow/imagegen-multi-provider/actions/workflows/ci.yml/badge.svg) ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 A Neo-Brutalist text-to-image web app that works with **any AI provider**. Plug in an OpenAI-compatible gateway, **Google Gemini (Nano Banana)**, or **Cloudflare Workers AI** — providers and image models are configured entirely from the UI, no code changes needed.
 
