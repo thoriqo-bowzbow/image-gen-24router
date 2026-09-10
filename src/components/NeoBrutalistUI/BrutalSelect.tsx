@@ -1,4 +1,4 @@
-import { SelectHTMLAttributes, forwardRef } from 'react';
+import { SelectHTMLAttributes, forwardRef, useId } from 'react';
 
 interface BrutalSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
@@ -7,7 +7,9 @@ interface BrutalSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export const BrutalSelect = forwardRef<HTMLSelectElement, BrutalSelectProps>(
-  ({ label, options, placeholder, className = '', id, ...props }, ref) => {
+  ({ label, options, placeholder, className = '', id: externalId, ...props }, ref) => {
+    const generatedId = useId();
+    const id = externalId || generatedId;
     return (
       <div className="flex flex-col gap-1">
         {label && (

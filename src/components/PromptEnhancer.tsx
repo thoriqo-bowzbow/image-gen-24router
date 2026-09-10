@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BrutalTextarea, BrutalButton } from '@/components/NeoBrutalistUI';
 import { enhancePrompt } from '@/lib/api';
-import { Sparkles, Check, X } from 'lucide-react';
+import { Sparkles, Check, X, Loader2 } from 'lucide-react';
 
 interface PromptEnhancerProps {
   originalPrompt: string;
@@ -66,7 +66,13 @@ export function PromptEnhancer({
           disabled={disabled || loading || !originalPrompt.trim()}
         >
           <Sparkles size={14} />
-          {loading ? 'Enhancing...' : 'Enhance Prompt'}
+          {loading ? (
+            <>
+              Mengembangkan prompt... <Loader2 size={12} className="animate-spin" />
+            </>
+          ) : (
+            'Enhance Prompt'
+          )}
         </BrutalButton>
       )}
 
@@ -79,6 +85,7 @@ export function PromptEnhancer({
       {editing && (
         <div className="flex flex-col gap-2">
           <BrutalTextarea
+            aria-label="Prompt hasil enhance"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             className="min-h-[60px]"

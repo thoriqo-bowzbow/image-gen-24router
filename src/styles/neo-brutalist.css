@@ -55,7 +55,7 @@
   box-shadow: 4px 4px 0 var(--shadow);
 }
 .brutal-input::placeholder {
-  color: var(--muted);
+  color: #4a4a43;
 }
 .brutal-input.textarea {
   resize: vertical;

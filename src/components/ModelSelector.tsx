@@ -41,6 +41,7 @@ export function ModelSelector({
       <div className="flex gap-2">
         <div className="flex-1">
           <BrutalSelect
+            aria-label="Model image"
             options={options}
             value={selected}
             onChange={(e) => {

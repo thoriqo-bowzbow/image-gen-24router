@@ -1,11 +1,13 @@
-import { InputHTMLAttributes, TextareaHTMLAttributes, forwardRef } from 'react';
+import { InputHTMLAttributes, TextareaHTMLAttributes, forwardRef, useId } from 'react';
 
 interface BrutalInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
 }
 
 export const BrutalInput = forwardRef<HTMLInputElement, BrutalInputProps>(
-  ({ label, className = '', id, ...props }, ref) => {
+  ({ label, className = '', id: externalId, ...props }, ref) => {
+    const generatedId = useId();
+    const id = externalId || generatedId;
     return (
       <div className="flex flex-col gap-1">
         {label && (
@@ -30,7 +32,9 @@ interface BrutalTextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement
 }
 
 export const BrutalTextarea = forwardRef<HTMLTextAreaElement, BrutalTextareaProps>(
-  ({ label, className = '', id, ...props }, ref) => {
+  ({ label, className = '', id: externalId, ...props }, ref) => {
+    const generatedId = useId();
+    const id = externalId || generatedId;
     return (
       <div className="flex flex-col gap-1">
         {label && (

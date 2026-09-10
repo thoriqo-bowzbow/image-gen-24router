@@ -441,7 +441,7 @@ export function SettingsView() {
                   <BrutalButton size="sm" onClick={() => setModelsOpenId(modelsOpenId === p.id ? null : p.id)}>
                     {p.models.length} Model
                   </BrutalButton>
-                  <BrutalButton size="sm" onClick={() => openEdit(p)}>
+                  <BrutalButton size="sm" aria-label={`Edit provider ${p.name}`} onClick={() => openEdit(p)}>
                     <Pencil size={14} />
                   </BrutalButton>
                   {isActive ? (
@@ -491,7 +491,11 @@ export function SettingsView() {
                         </span>
                       </div>
                       <div className="flex gap-1 flex-shrink-0">
-                        <BrutalButton size="sm" onClick={() => setModelForm({ editIndex: i, state: modelToForm(m) })}>
+                        <BrutalButton
+                          size="sm"
+                          aria-label={`Edit model ${m.id}`}
+                          onClick={() => setModelForm({ editIndex: i, state: modelToForm(m) })}
+                        >
                           <Pencil size={12} />
                         </BrutalButton>
                         <BrutalButton

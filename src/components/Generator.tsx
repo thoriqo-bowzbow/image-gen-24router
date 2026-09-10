@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { BrutalTextarea, BrutalButton } from '@/components/NeoBrutalistUI';
 import { ModelSelector } from '@/components/ModelSelector';
 import { ParamPanel } from '@/components/ParamPanel';
@@ -27,6 +27,15 @@ export function Generator() {
   const [paramsOverride, setParamsOverride] = useState<DefaultParams | null>(null);
   const [paramMode, setParamMode] = useState<'best' | 'advanced'>('best');
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [genStart, setGenStart] = useState<number | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+
+  // Timer berjalan selama generation berlangsung (indikator progress)
+  useEffect(() => {
+    if (gen.status !== 'loading' || genStart === null) return;
+    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - genStart) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [gen.status, genStart]);
 
   // Turunkan dari daftar model — otomatis memilih model pertama saat daftar termuat
   const activeModel = models.find((m) => m.id === selectedModelId) ?? models[0] ?? null;
@@ -42,6 +51,8 @@ export function Generator() {
     const finalPrompt = enhancedPrompt || prompt;
     if (!finalPrompt.trim() || !selectedModel) return;
 
+    setGenStart(Date.now());
+    setElapsed(0);
     if (paramMode === 'best') {
       await gen.generate({ model: selectedModel, prompt: finalPrompt });
     } else {
@@ -166,6 +177,7 @@ export function Generator() {
           <>
             <Loader2 size={18} className="animate-spin" />
             {gen.progress}
+            {elapsed > 0 ? ` • ${elapsed}s` : ''}
           </>
         ) : (
           <>
