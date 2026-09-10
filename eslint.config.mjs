@@ -13,6 +13,14 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    files: ["src/**/*.{ts,tsx,js,jsx}"],
+    rules: {
+      // Gambar hasil generate adalah data URL base64 dinamis (bukan aset
+      // statis), dan next/image dijalankan unoptimized di proyek ini.
+      "@next/next/no-img-element": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

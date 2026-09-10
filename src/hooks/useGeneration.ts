@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { ImageGenerateParams, GenerateResponse, ImageResult } from '@/lib/api';
+import type { ImageGenerateParams, GenerateResponse } from '@/lib/api';
 import { generateImage } from '@/lib/api';
 
 export type GenerationStatus = 'idle' | 'loading' | 'enhancing' | 'success' | 'error';

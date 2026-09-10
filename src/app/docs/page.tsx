@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { BrutalCard } from '@/components/NeoBrutalistUI';
 
 export const metadata: Metadata = {
-  title: 'Docs • Text-to-Image',
-  description: 'Panduan penggunaan image-gen dari awal sampai bisa generate gambar',
+  title: 'Docs • ImageGen',
+  description: 'Panduan penggunaan image-gen dari provider kosong sampai generate gambar',
 };
 
 function Step({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {

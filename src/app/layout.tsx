@@ -1,23 +1,28 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "@/styles/globals.css";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-ui",
+  weight: ["400", "700", "900"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  weight: ["400", "700"],
+});
+
 export const metadata: Metadata = {
-  title: "Text-to-Image • Neo-Brutalist",
-  description: "Generate gambar dengan AI provider apa saja (OpenAI-compatible)",
+  title: "ImageGen • Multi-Provider Text-to-Image",
+  description: "Generate gambar dengan AI provider apa saja (OpenAI-compatible, Gemini, Cloudflare Workers AI)",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className="scanlines">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&family=Space+Mono:wght@400;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="id" className={`scanlines ${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="min-h-screen">
         <header className="border-b-[var(--border-w)] border-[var(--border)] bg-[var(--surface)]">
           <nav className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">

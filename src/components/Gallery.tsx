@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { BrutalCard, BrutalInput, BrutalButton, BrutalBadge } from '@/components/NeoBrutalistUI';
 import { useGallery } from '@/hooks/useGallery';
-import { Search, Trash2, RotateCcw, Download, ImageIcon } from 'lucide-react';
+import { Trash2, RotateCcw, Download, ImageIcon } from 'lucide-react';
 import { downloadImage } from '@/lib/fs';
 import { modelShortName } from '@/lib/models';
 

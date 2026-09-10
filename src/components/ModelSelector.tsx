@@ -1,8 +1,8 @@
 'use client';
 
-import { BrutalSelect, BrutalBadge } from '@/components/NeoBrutalistUI';
+import { BrutalSelect } from '@/components/NeoBrutalistUI';
 import type { ModelInfo } from '@/lib/api';
-import { groupByProvider, modelShortName } from '@/lib/models';
+import { modelShortName } from '@/lib/models';
 import { RefreshCw } from 'lucide-react';
 
 interface ModelSelectorProps {
@@ -20,8 +20,6 @@ export function ModelSelector({
   loading,
   onRefresh,
 }: ModelSelectorProps) {
-  const groups = groupByProvider(models);
-
   const options = models.map((m) => ({
     value: m.id,
     label: `${m.owned_by || 'unknown'} / ${modelShortName(m.id)}`,

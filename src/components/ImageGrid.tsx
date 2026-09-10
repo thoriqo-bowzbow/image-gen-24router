@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BrutalCard, BrutalBadge, BrutalButton } from '@/components/NeoBrutalistUI';
+import { BrutalCard, BrutalBadge } from '@/components/NeoBrutalistUI';
 import { Download, RotateCcw, Trash2, Maximize2 } from 'lucide-react';
 import { downloadImage, generateFilename } from '@/lib/fs';
 import { imageDataUrl, imageExt } from '@/lib/api';

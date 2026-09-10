@@ -14,7 +14,6 @@ import { imageDataUrl } from '@/lib/api';
 import type { DefaultParams } from '@/lib/models';
 
 import { Wand2, Loader2, AlertCircle } from 'lucide-react';
-import type { ModelInfo } from '@/lib/api';
 
 export function Generator() {
   const { models, loading: modelsLoading, error: modelsError, refresh: refreshModels } = useModels();
@@ -34,7 +33,7 @@ export function Generator() {
   const selectedModel = activeModel?.id ?? '';
   const params = paramsOverride ?? getDefaultParams();
 
-  const handleModelSelect = useCallback((modelId: string, _info: ModelInfo) => {
+  const handleModelSelect = useCallback((modelId: string) => {
     setSelectedModelId(modelId);
     setParamsOverride(null);
   }, []);
@@ -53,17 +52,6 @@ export function Generator() {
       });
     }
   }, [enhancedPrompt, prompt, selectedModel, gen, params, paramMode]);
-
-  const handleReRun = useCallback(
-    (data: { prompt: string; enhancedPrompt: string; model: string; params: DefaultParams }) => {
-      setPrompt(data.prompt);
-      setEnhancedPrompt(data.enhancedPrompt);
-      setSelectedModelId(data.model);
-      setParamsOverride(data.params);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    },
-    [models]
-  );
 
   const handleSaveToGallery = useCallback(async () => {
     if (!gen.result) return;
