@@ -2,17 +2,17 @@
 
 import { useCallback } from 'react';
 import { BrutalSlider, BrutalInput, BrutalSelect } from '@/components/NeoBrutalistUI';
-import type { ModelInfo } from '@/lib/api';
 import type { DefaultParams } from '@/lib/models';
 import { Dice1 } from 'lucide-react';
 
 interface ParamPanelProps {
-  model: ModelInfo | null;
   params: DefaultParams;
   onChange: (params: DefaultParams) => void;
 }
 
-export function ParamPanel({ model, params, onChange }: ParamPanelProps) {
+const SIZES = ['512x512', '768x768', '1024x1024', '1024x768', '768x1024', '1024x576', '576x1024'];
+
+export function ParamPanel({ params, onChange }: ParamPanelProps) {
   const update = useCallback(
     <K extends keyof DefaultParams>(key: K, value: DefaultParams[K]) => {
       onChange({ ...params, [key]: value });
@@ -20,19 +20,12 @@ export function ParamPanel({ model, params, onChange }: ParamPanelProps) {
     [params, onChange]
   );
 
-  if (!model) return null;
-
-  const sizes = ['512x512', '768x768', '1024x1024', '1024x768', '768x1024', '1024x576', '576x1024'];
-
   return (
     <div className="flex flex-col gap-4">
-      <hr className="brutal-divider" />
-      <span className="text-xs font-bold uppercase tracking-wider">Parameters</span>
-
       <div className="brutal-grid cols-2">
         <BrutalSelect
           label="Image Size"
-          options={sizes.map((s) => ({ value: s, label: s }))}
+          options={SIZES.map((s) => ({ value: s, label: s }))}
           value={String(params.image_size || '1024x1024')}
           onChange={(e) => update('image_size', e.target.value)}
         />
@@ -47,8 +40,8 @@ export function ParamPanel({ model, params, onChange }: ParamPanelProps) {
 
       <BrutalSlider
         label="Steps"
-        min={model.step_range?.[0] ?? 1}
-        max={model.step_range?.[1] ?? 50}
+        min={1}
+        max={50}
         step={1}
         value={Number(params.num_inference_steps ?? 4)}
         onChange={(e) => update('num_inference_steps', Number(e.target.value))}
@@ -57,8 +50,8 @@ export function ParamPanel({ model, params, onChange }: ParamPanelProps) {
 
       <BrutalSlider
         label="Guidance Scale (CFG)"
-        min={model.cfg_range?.[0] ?? 0}
-        max={model.cfg_range?.[1] ?? 20}
+        min={0}
+        max={20}
         step={0.5}
         value={Number(params.guidance_scale ?? 3.5)}
         onChange={(e) => update('guidance_scale', Number(e.target.value))}
@@ -89,25 +82,6 @@ export function ParamPanel({ model, params, onChange }: ParamPanelProps) {
         onChange={(e) => update('negative_prompt', e.target.value)}
         placeholder="Apa yang TIDAK ingin muncul..."
       />
-
-      {model.style_presets && model.style_presets.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-bold uppercase tracking-wider">Style Preset</span>
-          <div className="flex flex-wrap gap-1">
-            {model.style_presets.map((style) => (
-              <button
-                key={style}
-                onClick={() => update('style_preset', style === params.style_preset ? '' : style)}
-                className={`brutal-badge cursor-pointer ${
-                  params.style_preset === style ? 'accent' : 'outline'
-                }`}
-              >
-                {style}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

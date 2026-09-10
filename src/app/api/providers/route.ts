@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readProvidersFile, writeProvidersFile, slugify, uniqueSlug } from '@/lib/providers/store';
-import { sanitizeBaseUrl, sanitizeModels } from '@/lib/providers/validate';
+import { readProvidersFile, writeProvidersFile, slugify, uniqueSlug, getEnhanceConfig } from '@/lib/providers/store';
+import { sanitizeModels, resolveBaseUrl } from '@/lib/providers/validate';
 import { toSummary } from '@/lib/providers/types';
-import type { ProviderConfig } from '@/lib/providers/types';
+import type { ProviderConfig, ProviderProtocol } from '@/lib/providers/types';
+
+function parseProtocol(raw: unknown): ProviderProtocol {
+  if (raw === 'google-gemini') return 'google-gemini';
+  if (raw === 'cloudflare-workers-ai') return 'cloudflare-workers-ai';
+  return 'openai-compatible';
+}
 
 export async function GET() {
   const data = await readProvidersFile();
+  const enhance = await getEnhanceConfig();
   return NextResponse.json({
     activeProviderId: data.activeProviderId,
+    enhance,
     providers: data.providers.map(toSummary),
   });
 }
@@ -25,11 +33,13 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await readProvidersFile();
+    const protocol = parseProtocol(body.protocol);
     const provider: ProviderConfig = {
       id: uniqueSlug(slugify(name), data.providers),
       name,
-      baseUrl: sanitizeBaseUrl(body.baseUrl),
-      protocol: 'openai-compatible',
+      baseUrl: resolveBaseUrl(body.baseUrl, protocol),
+      protocol: protocol,
+      accountId: typeof body.accountId === 'string' && body.accountId.trim() ? body.accountId.trim() : undefined,
       apiKey: typeof body.apiKey === 'string' && body.apiKey ? body.apiKey : undefined,
       enhanceModel:
         typeof body.enhanceModel === 'string' && body.enhanceModel.trim()

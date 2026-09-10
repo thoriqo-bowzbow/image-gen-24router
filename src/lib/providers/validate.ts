@@ -1,5 +1,27 @@
 import type { ModelInfo } from '@/lib/api';
 
+export const GEMINI_DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
+export const CF_DEFAULT_BASE_URL = 'https://api.cloudflare.com/client/v4';
+
+export function resolveBaseUrl(raw: unknown, protocol: string): string {
+  const url = typeof raw === 'string' ? raw.trim() : '';
+  if (protocol === 'google-gemini') {
+    if (!url) return GEMINI_DEFAULT_BASE_URL;
+    if (!/^https?:\/\//i.test(url)) {
+      throw new Error('baseUrl harus diawali http:// atau https://');
+    }
+    return url.replace(/\/+$/, '');
+  }
+  if (protocol === 'cloudflare-workers-ai') {
+    if (!url) return CF_DEFAULT_BASE_URL;
+    if (!/^https?:\/\//i.test(url)) {
+      throw new Error('baseUrl harus diawali http:// atau https://');
+    }
+    return url.replace(/\/+$/, '');
+  }
+  return sanitizeBaseUrl(raw);
+}
+
 export function sanitizeBaseUrl(raw: unknown): string {
   if (typeof raw !== 'string' || !raw.trim()) {
     throw new Error('baseUrl wajib diisi');
@@ -29,21 +51,7 @@ export function sanitizeModels(raw: unknown): ModelInfo[] {
       owned_by: typeof rec.owned_by === 'string' && rec.owned_by ? rec.owned_by : 'custom',
     };
     if (typeof rec.description === 'string' && rec.description) model.description = rec.description;
-    if (typeof rec.max_image_size === 'string' && rec.max_image_size) model.max_image_size = rec.max_image_size;
-    if (isRange(rec.step_range)) model.step_range = rec.step_range;
-    if (isRange(rec.cfg_range)) model.cfg_range = rec.cfg_range;
-    if (typeof rec.max_batch === 'number') model.max_batch = rec.max_batch;
-    if (isStringArray(rec.style_presets)) model.style_presets = rec.style_presets;
-    if (isStringArray(rec.capabilities)) model.capabilities = rec.capabilities;
     out.push(model);
   }
   return out;
-}
-
-function isRange(v: unknown): v is [number, number] {
-  return Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === 'number');
-}
-
-function isStringArray(v: unknown): v is string[] {
-  return Array.isArray(v) && v.every((x) => typeof x === 'string');
 }

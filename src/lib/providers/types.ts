@@ -1,6 +1,6 @@
 import type { ModelInfo } from '@/lib/api';
 
-export type ProviderProtocol = 'openai-compatible';
+export type ProviderProtocol = 'openai-compatible' | 'google-gemini' | 'cloudflare-workers-ai';
 
 export interface ProviderConfig {
   id: string;
@@ -8,13 +8,22 @@ export interface ProviderConfig {
   baseUrl: string;
   protocol: ProviderProtocol;
   apiKey?: string;
+  accountId?: string;
   enhanceModel?: string;
   models: ModelInfo[];
 }
 
 export interface ProvidersFile {
   activeProviderId: string | null;
+  // Konfigurasi khusus prompt enhancer (bisa beda provider dari image generator)
+  enhanceProviderId: string | null;
+  enhanceModelId: string | null;
   providers: ProviderConfig[];
+}
+
+export interface EnhanceConfig {
+  providerId: string | null;
+  model: string | null;
 }
 
 export interface ProviderSummary extends Omit<ProviderConfig, 'apiKey'> {

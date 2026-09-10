@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { BrutalCard, BrutalBadge, BrutalButton } from '@/components/NeoBrutalistUI';
 import { Download, RotateCcw, Trash2, Maximize2 } from 'lucide-react';
 import { downloadImage, generateFilename } from '@/lib/fs';
+import { imageDataUrl, imageExt } from '@/lib/api';
 import type { ImageResult } from '@/lib/api';
 
 interface ImageGridProps {
@@ -23,10 +24,8 @@ export function ImageGrid({ images, modelName, seed, onReRun, onDelete }: ImageG
   const handleDownload = async (img: ImageResult, idx: number) => {
     setSaving((s) => ({ ...s, [idx]: true }));
     try {
-      const url = img.b64_json
-        ? `data:image/webp;base64,${img.b64_json}`
-        : img.url;
-      const filename = generateFilename(modelName || 'image', 'webp');
+      const url = imageDataUrl(img);
+      const filename = generateFilename(modelName || 'image', imageExt(img));
       downloadImage(url, filename);
     } finally {
       setSaving((s) => ({ ...s, [idx]: false }));
@@ -43,7 +42,7 @@ export function ImageGrid({ images, modelName, seed, onReRun, onDelete }: ImageG
               onClick={() => setFullscreenIdx(idx)}
             >
               <img
-                src={img.b64_json ? `data:image/webp;base64,${img.b64_json}` : img.url}
+                src={imageDataUrl(img)}
                 alt={`Generated ${idx + 1}`}
                 className="w-full h-auto object-cover border-b-[var(--border-w)] border-[var(--border)]"
                 loading="lazy"
@@ -95,11 +94,7 @@ export function ImageGrid({ images, modelName, seed, onReRun, onDelete }: ImageG
           onClick={() => setFullscreenIdx(null)}
         >
           <img
-            src={
-              images[fullscreenIdx].b64_json
-                ? `data:image/webp;base64,${images[fullscreenIdx].b64_json}`
-                : images[fullscreenIdx].url
-            }
+            src={imageDataUrl(images[fullscreenIdx])}
             alt="Fullscreen"
             className="max-w-full max-h-full object-contain"
           />

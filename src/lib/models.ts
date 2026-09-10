@@ -53,19 +53,15 @@ export interface DefaultParams {
   [key: string]: unknown;
 }
 
-export function getDefaultParams(model: ModelInfo): DefaultParams {
+export function getDefaultParams(): DefaultParams {
   return {
-    image_size: model.max_image_size || '1024x1024',
-    batch_size: model.max_batch || 1,
-    num_inference_steps: model.step_range?.[0]
-      ? Math.floor((model.step_range[0] + model.step_range[1]) / 4)
-      : 4,
-    guidance_scale: model.cfg_range
-      ? (model.cfg_range[0] + model.cfg_range[1]) / 2
-      : 3.5,
+    image_size: '1024x1024',
+    batch_size: 1,
+    num_inference_steps: 4,
+    guidance_scale: 3.5,
     seed: -1,
     negative_prompt: '',
-    style_preset: model.style_presets?.[0] || '',
+    style_preset: '',
   };
 }
 

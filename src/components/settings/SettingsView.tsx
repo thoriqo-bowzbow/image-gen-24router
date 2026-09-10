@@ -6,6 +6,7 @@ import type { ProviderSummary, ModelInfo } from '@/lib/api';
 import {
   BrutalButton,
   BrutalInput,
+  BrutalSelect,
   BrutalCard,
   BrutalBadge,
 } from '@/components/NeoBrutalistUI';
@@ -14,34 +15,29 @@ import { Plus, Trash2, Pencil, X, Loader2, PlugZap, Check, AlertCircle } from 'l
 interface ProviderFields {
   name: string;
   baseUrl: string;
+  protocol: 'openai-compatible' | 'google-gemini' | 'cloudflare-workers-ai';
   apiKey: string;
-  enhanceModel: string;
+  accountId: string;
 }
 
-const EMPTY_FIELDS: ProviderFields = { name: '', baseUrl: '', apiKey: '', enhanceModel: '' };
+const EMPTY_FIELDS: ProviderFields = {
+  name: '',
+  baseUrl: '',
+  protocol: 'openai-compatible',
+  apiKey: '',
+  accountId: '',
+};
 
 interface FormModelState {
   id: string;
   owned_by: string;
   description: string;
-  max_image_size: string;
-  step_min: string;
-  step_max: string;
-  cfg_min: string;
-  cfg_max: string;
-  max_batch: string;
 }
 
 const EMPTY_MODEL: FormModelState = {
   id: '',
   owned_by: '',
   description: '',
-  max_image_size: '1024x1024',
-  step_min: '',
-  step_max: '',
-  cfg_min: '',
-  cfg_max: '',
-  max_batch: '',
 };
 
 function modelToForm(m: ModelInfo): FormModelState {
@@ -49,36 +45,13 @@ function modelToForm(m: ModelInfo): FormModelState {
     id: m.id,
     owned_by: m.owned_by || '',
     description: m.description || '',
-    max_image_size: m.max_image_size || '',
-    step_min: m.step_range ? String(m.step_range[0]) : '',
-    step_max: m.step_range ? String(m.step_range[1]) : '',
-    cfg_min: m.cfg_range ? String(m.cfg_range[0]) : '',
-    cfg_max: m.cfg_range ? String(m.cfg_range[1]) : '',
-    max_batch: m.max_batch !== undefined ? String(m.max_batch) : '',
   };
 }
 
 function formToModel(f: FormModelState): ModelInfo {
   const m: ModelInfo = { id: f.id.trim(), object: 'model', owned_by: f.owned_by.trim() || 'custom' };
   if (f.description.trim()) m.description = f.description.trim();
-  if (f.max_image_size.trim()) m.max_image_size = f.max_image_size.trim();
-  const stepMin = Number(f.step_min);
-  const stepMax = Number(f.step_max);
-  if (f.step_min !== '' && f.step_max !== '' && !Number.isNaN(stepMin) && !Number.isNaN(stepMax)) {
-    m.step_range = [stepMin, stepMax];
-  }
-  const cfgMin = Number(f.cfg_min);
-  const cfgMax = Number(f.cfg_max);
-  if (f.cfg_min !== '' && f.cfg_max !== '' && !Number.isNaN(cfgMin) && !Number.isNaN(cfgMax)) {
-    m.cfg_range = [cfgMin, cfgMax];
-  }
-  const maxBatch = Number(f.max_batch);
-  if (f.max_batch !== '' && !Number.isNaN(maxBatch)) m.max_batch = maxBatch;
   return m;
-}
-
-function numRange(r?: [number, number]): string {
-  return r ? `${r[0]}–${r[1]}` : '-';
 }
 
 export function SettingsView() {
@@ -98,6 +71,11 @@ export function SettingsView() {
   const [modelsOpenId, setModelsOpenId] = useState<string | null>(null);
   const [modelForm, setModelForm] = useState<{ editIndex: number | null; state: FormModelState } | null>(null);
 
+  const [enhanceProvider, setEnhanceProvider] = useState<string>('');
+  const [enhanceModelId, setEnhanceModelId] = useState<string>('');
+  const [enhanceSaved, setEnhanceSaved] = useState(false);
+  const [savingEnhance, setSavingEnhance] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     setPageError(null);
@@ -105,6 +83,8 @@ export function SettingsView() {
       const data = await providersApi.list();
       setProviders(data.providers);
       setActiveId(data.activeProviderId);
+      setEnhanceProvider(data.enhance?.providerId ?? '');
+      setEnhanceModelId(data.enhance?.model ?? '');
     } catch (e) {
       setPageError(e instanceof Error ? e.message : 'Gagal memuat provider');
     } finally {
@@ -124,7 +104,13 @@ export function SettingsView() {
   };
 
   const openEdit = (p: ProviderSummary) => {
-    setFields({ name: p.name, baseUrl: p.baseUrl, apiKey: '', enhanceModel: p.enhanceModel || '' });
+    setFields({
+      name: p.name,
+      baseUrl: p.baseUrl,
+      protocol: p.protocol,
+      apiKey: '',
+      accountId: p.accountId || '',
+    });
     setEditId(p.id);
     setFormMode('edit');
     setFormError(null);
@@ -133,25 +119,28 @@ export function SettingsView() {
   const handleSaveProvider = async () => {
     setFormError(null);
     if (!fields.name.trim()) return setFormError('Nama wajib diisi.');
-    if (!/^https?:\/\//i.test(fields.baseUrl.trim())) {
+    if (fields.protocol === 'openai-compatible' && !/^https?:\/\//i.test(fields.baseUrl.trim())) {
       return setFormError('Base URL harus diawali http:// atau https://.');
+    }
+    if (fields.protocol === 'cloudflare-workers-ai') {
+      if (!fields.accountId.trim()) return setFormError('Account ID Cloudflare wajib diisi.');
+      if (formMode === 'new' && !fields.apiKey.trim()) {
+        return setFormError('API Token Cloudflare wajib diisi.');
+      }
     }
     setSaving(true);
     try {
+      const payload = {
+        name: fields.name,
+        baseUrl: fields.protocol === 'openai-compatible' ? fields.baseUrl : '',
+        protocol: fields.protocol,
+        ...(fields.apiKey ? { apiKey: fields.apiKey } : {}),
+        accountId: fields.accountId,
+      };
       if (formMode === 'new') {
-        await providersApi.create({
-          name: fields.name,
-          baseUrl: fields.baseUrl,
-          ...(fields.apiKey ? { apiKey: fields.apiKey } : {}),
-          enhanceModel: fields.enhanceModel,
-        });
+        await providersApi.create(payload);
       } else if (editId) {
-        await providersApi.update(editId, {
-          name: fields.name,
-          baseUrl: fields.baseUrl,
-          ...(fields.apiKey ? { apiKey: fields.apiKey } : {}),
-          enhanceModel: fields.enhanceModel,
-        });
+        await providersApi.update(editId, payload);
       }
       setFormMode('closed');
       await load();
@@ -181,7 +170,10 @@ export function SettingsView() {
     }
   };
 
-  const runTest = async (key: string, input: { providerId?: string; baseUrl?: string; apiKey?: string }) => {
+  const runTest = async (
+    key: string,
+    input: { providerId?: string; protocol?: string; baseUrl?: string; apiKey?: string; accountId?: string }
+  ) => {
     setTestState((s) => ({ ...s, [key]: { loading: true, message: '' } }));
     try {
       const result = await providersApi.test(input);
@@ -200,6 +192,27 @@ export function SettingsView() {
       await load();
     } catch (e) {
       setPageError(e instanceof Error ? e.message : 'Gagal menyimpan model');
+    }
+  };
+
+  const handleSaveEnhance = async () => {
+    setEnhanceSaved(false);
+    setPageError(null);
+    if (enhanceProvider && !enhanceModelId.trim()) {
+      setPageError('Enhance model wajib diisi jika provider enhance dipilih.');
+      return;
+    }
+    setSavingEnhance(true);
+    try {
+      await providersApi.setEnhance({
+        providerId: enhanceProvider || null,
+        model: enhanceModelId.trim() || null,
+      });
+      setEnhanceSaved(true);
+    } catch (e) {
+      setPageError(e instanceof Error ? e.message : 'Gagal menyimpan konfigurasi enhance');
+    } finally {
+      setSavingEnhance(false);
     }
   };
 
@@ -227,6 +240,58 @@ export function SettingsView() {
         </div>
       )}
 
+      {!loading && (
+        <BrutalCard>
+          <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
+            <span className="text-sm font-bold">PROMPT ENHANCER</span>
+            {enhanceSaved && (
+              <span className="text-xs font-mono text-[var(--fg)] flex items-center gap-1">
+                <Check size={12} /> tersimpan
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <BrutalSelect
+              label="Provider Enhance"
+              value={enhanceProvider}
+              onChange={(e) => {
+                setEnhanceProvider(e.target.value);
+                setEnhanceSaved(false);
+              }}
+              options={[
+                { value: '', label: '— ikuti provider image aktif —' },
+                ...providers.map((p) => ({ value: p.id, label: `${p.name} (${p.protocol})` })),
+              ]}
+            />
+            {enhanceProvider && (
+              <BrutalInput
+                label="Model Enhance (chat model)"
+                placeholder={
+                  providers.find((p) => p.id === enhanceProvider)?.protocol === 'google-gemini'
+                    ? 'mis. gemini-3.6-flash'
+                    : providers.find((p) => p.id === enhanceProvider)?.protocol === 'cloudflare-workers-ai'
+                      ? 'mis. @cf/meta/llama-3.1-8b-instruct'
+                      : 'mis. gpt-4o-mini'
+                }
+                value={enhanceModelId}
+                onChange={(e) => {
+                  setEnhanceModelId(e.target.value);
+                  setEnhanceSaved(false);
+                }}
+              />
+            )}
+          </div>
+          <p className="text-xs text-[var(--muted)] font-mono mt-2">
+            Prompt enhancer boleh pakai provider/model yang berbeda dari image generator
+            (mis. enhance pakai Gemini, generate pakai Cloudflare). Kosongkan untuk mengikuti provider aktif.
+          </p>
+          <BrutalButton size="sm" className="mt-3" onClick={handleSaveEnhance} disabled={savingEnhance}>
+            {savingEnhance ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+            Simpan Enhancer
+          </BrutalButton>
+        </BrutalCard>
+      )}
+
       {formMode !== 'closed' && (
         <BrutalCard>
           <div className="flex items-center justify-between mb-3">
@@ -245,24 +310,60 @@ export function SettingsView() {
                 value={fields.name}
                 onChange={(e) => setFields((f) => ({ ...f, name: e.target.value }))}
               />
-              <BrutalInput
-                label="Base URL"
-                placeholder="https://api.provider.com"
-                value={fields.baseUrl}
-                onChange={(e) => setFields((f) => ({ ...f, baseUrl: e.target.value }))}
+              <BrutalSelect
+                label="Protokol"
+                value={fields.protocol}
+                onChange={(e) => setFields((f) => ({ ...f, protocol: e.target.value as ProviderFields['protocol'] }))}
+                options={[
+                  { value: 'openai-compatible', label: 'OpenAI-compatible (gateway, OpenRouter, vLLM, dll)' },
+                  { value: 'google-gemini', label: 'Google Gemini (Nano Banana)' },
+                  { value: 'cloudflare-workers-ai', label: 'Cloudflare Workers AI' },
+                ]}
               />
+              {fields.protocol === 'openai-compatible' && (
+                <BrutalInput
+                  label="Base URL"
+                  placeholder="https://api.provider.com"
+                  value={fields.baseUrl}
+                  onChange={(e) => setFields((f) => ({ ...f, baseUrl: e.target.value }))}
+                />
+              )}
+              {fields.protocol === 'google-gemini' && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-bold uppercase tracking-wider">Base URL</span>
+                  <span className="text-xs font-mono text-[var(--muted)]">
+                    Memakai endpoint resmi Google: generativelanguage.googleapis.com — cukup isi API key.
+                  </span>
+                </div>
+              )}
+              {fields.protocol === 'cloudflare-workers-ai' && (
+                <>
+                  <BrutalInput
+                    label="Account ID"
+                    placeholder="mis. 023e105f4ecef8ad9ca31a8372d0c353"
+                    value={fields.accountId}
+                    onChange={(e) => setFields((f) => ({ ...f, accountId: e.target.value }))}
+                  />
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-bold uppercase tracking-wider">Base URL</span>
+                    <span className="text-xs font-mono text-[var(--muted)]">
+                      Memakai endpoint resmi Cloudflare: api.cloudflare.com/client/v4 — cukup Account ID + API Token.
+                    </span>
+                  </div>
+                </>
+              )}
               <BrutalInput
-                label="API Key (opsional)"
+                label={fields.protocol === 'cloudflare-workers-ai' ? 'API Token Cloudflare' : 'API Key (opsional)'}
                 type="password"
-                placeholder={formMode === 'edit' ? 'kosongkan untuk tidak mengubah' : 'kosongkan jika tidak perlu'}
+                placeholder={
+                  fields.protocol === 'cloudflare-workers-ai'
+                    ? 'token dengan izin Workers AI (Read)'
+                    : formMode === 'edit'
+                      ? 'kosongkan untuk tidak mengubah'
+                      : 'kosongkan jika tidak perlu'
+                }
                 value={fields.apiKey}
                 onChange={(e) => setFields((f) => ({ ...f, apiKey: e.target.value }))}
-              />
-              <BrutalInput
-                label="Enhance Model (opsional)"
-                placeholder="mis. model-chat-gpt-4o"
-                value={fields.enhanceModel}
-                onChange={(e) => setFields((f) => ({ ...f, enhanceModel: e.target.value }))}
               />
             </div>
             {formError && (
@@ -273,10 +374,17 @@ export function SettingsView() {
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                 Simpan
               </BrutalButton>
-              {fields.baseUrl.trim() && (
+              {(fields.protocol !== 'openai-compatible' || fields.baseUrl.trim()) && (
                 <BrutalButton
                   size="sm"
-                  onClick={() => runTest('__form__', { baseUrl: fields.baseUrl, apiKey: fields.apiKey || undefined })}
+                  onClick={() =>
+                    runTest('__form__', {
+                      baseUrl: fields.baseUrl,
+                      protocol: fields.protocol,
+                      apiKey: fields.apiKey || undefined,
+                      accountId: fields.accountId || undefined,
+                    })
+                  }
                 >
                   <PlugZap size={14} /> Test Koneksi
                 </BrutalButton>
@@ -309,7 +417,7 @@ export function SettingsView() {
           const isActive = p.id === activeId;
           const test = testState[p.id];
           return (
-            <BrutalCard key={p.id} className={isActive ? '!border-[var(--fg)]' : ''}>
+            <BrutalCard key={p.id} className={isActive ? '!border-[var(--accent)]' : ''}>
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
@@ -322,7 +430,8 @@ export function SettingsView() {
                   </div>
                   <span className="text-xs font-mono text-[var(--muted)]">{p.baseUrl}</span>
                   <span className="text-xs font-mono text-[var(--muted)]">
-                    API key: {p.hasApiKey ? 'tersimpan' : 'tidak ada'} · enhance: {p.enhanceModel || '-'} · {p.models.length} model
+                    {p.protocol} · API key: {p.hasApiKey ? 'tersimpan' : 'tidak ada'}
+                    {p.accountId ? ` · account: ${p.accountId.slice(0, 8)}…` : ''} · {p.models.length} model
                   </span>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -335,7 +444,11 @@ export function SettingsView() {
                   <BrutalButton size="sm" onClick={() => openEdit(p)}>
                     <Pencil size={14} />
                   </BrutalButton>
-                  {!isActive && (
+                  {isActive ? (
+                    <BrutalButton size="sm" variant="accent" disabled>
+                      <Check size={14} /> AKTIF
+                    </BrutalButton>
+                  ) : (
                     <BrutalButton size="sm" variant="accent" onClick={() => handleSetActive(p)}>
                       Jadikan Aktif
                     </BrutalButton>
@@ -373,8 +486,7 @@ export function SettingsView() {
                       <div className="flex flex-col gap-0.5">
                         <span className="font-mono font-bold break-all">{m.id}</span>
                         <span className="text-[var(--muted)] font-mono">
-                          {m.owned_by} · size {m.max_image_size || '-'} · steps {numRange(m.step_range)} · cfg{' '}
-                          {numRange(m.cfg_range)} · batch ≤ {m.max_batch ?? '-'}
+                          {m.owned_by}
                           {m.description ? ` · ${m.description}` : ''}
                         </span>
                       </div>
@@ -406,76 +518,29 @@ export function SettingsView() {
                           <X size={14} />
                         </button>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <BrutalInput
                           label="Model ID"
-                          placeholder="mis. flux-1-schnell"
+                          placeholder="mis. @cf/black-forest-labs/flux-1-schnell"
                           value={modelForm.state.id}
                           onChange={(e) =>
                             setModelForm((f) => f && { ...f, state: { ...f.state, id: e.target.value } })
                           }
                         />
                         <BrutalInput
-                          label="Owner / Label"
-                          placeholder="mis. black-forest-labs"
+                          label="Label"
+                          placeholder="mis. FLUX.1 Schnell"
                           value={modelForm.state.owned_by}
                           onChange={(e) =>
                             setModelForm((f) => f && { ...f, state: { ...f.state, owned_by: e.target.value } })
                           }
                         />
                         <BrutalInput
-                          label="Deskripsi"
+                          label="Deskripsi (opsional)"
+                          placeholder="mis. cepat, kualitas bagus"
                           value={modelForm.state.description}
                           onChange={(e) =>
                             setModelForm((f) => f && { ...f, state: { ...f.state, description: e.target.value } })
-                          }
-                        />
-                        <BrutalInput
-                          label="Max Image Size"
-                          placeholder="1024x1024"
-                          value={modelForm.state.max_image_size}
-                          onChange={(e) =>
-                            setModelForm((f) => f && { ...f, state: { ...f.state, max_image_size: e.target.value } })
-                          }
-                        />
-                        <BrutalInput
-                          label="Steps (min–max)"
-                          placeholder="1"
-                          value={modelForm.state.step_min}
-                          onChange={(e) =>
-                            setModelForm((f) => f && { ...f, state: { ...f.state, step_min: e.target.value } })
-                          }
-                        />
-                        <BrutalInput
-                          label="Steps max"
-                          placeholder="4"
-                          value={modelForm.state.step_max}
-                          onChange={(e) =>
-                            setModelForm((f) => f && { ...f, state: { ...f.state, step_max: e.target.value } })
-                          }
-                        />
-                        <BrutalInput
-                          label="CFG min"
-                          placeholder="1"
-                          value={modelForm.state.cfg_min}
-                          onChange={(e) =>
-                            setModelForm((f) => f && { ...f, state: { ...f.state, cfg_min: e.target.value } })
-                          }
-                        />
-                        <BrutalInput
-                          label="CFG max"
-                          placeholder="5"
-                          value={modelForm.state.cfg_max}
-                          onChange={(e) =>
-                            setModelForm((f) => f && { ...f, state: { ...f.state, cfg_max: e.target.value } })
-                          }
-                        />
-                        <BrutalInput
-                          label="Max Batch"
-                          placeholder="4"
-                          value={modelForm.state.max_batch}
-                          onChange={(e) =>
-                            setModelForm((f) => f && { ...f, state: { ...f.state, max_batch: e.target.value } })
                           }
                         />
                       </div>

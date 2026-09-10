@@ -4,7 +4,8 @@ import type { ImageProviderAdapter } from './adapter';
 import type { ProviderConfig } from './types';
 
 function endpoint(baseUrl: string, path: string): string {
-  return `${baseUrl.replace(/\/+$/, '')}${path}`;
+  // Normalisasi: beberapa user mengisi baseUrl yang sudah diakhiri /v1
+  return `${baseUrl.replace(/\/+$/, '').replace(/\/v1$/i, '')}${path}`;
 }
 
 export const openAICompatibleAdapter: ImageProviderAdapter = {

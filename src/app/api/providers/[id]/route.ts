@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readProvidersFile, writeProvidersFile } from '@/lib/providers/store';
-import { sanitizeBaseUrl, sanitizeModels } from '@/lib/providers/validate';
+import {
+  sanitizeModels,
+  resolveBaseUrl,
+  GEMINI_DEFAULT_BASE_URL,
+  CF_DEFAULT_BASE_URL,
+} from '@/lib/providers/validate';
 import { toSummary } from '@/lib/providers/types';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -19,8 +24,20 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     if (typeof body.name === 'string' && body.name.trim()) {
       provider.name = body.name.trim();
     }
+    if (
+      body.protocol === 'openai-compatible' ||
+      body.protocol === 'google-gemini' ||
+      body.protocol === 'cloudflare-workers-ai'
+    ) {
+      provider.protocol = body.protocol;
+    }
+    if (typeof body.accountId === 'string') {
+      provider.accountId = body.accountId.trim() || undefined;
+    }
     if (typeof body.baseUrl === 'string' && body.baseUrl.trim()) {
-      provider.baseUrl = sanitizeBaseUrl(body.baseUrl);
+      provider.baseUrl = resolveBaseUrl(body.baseUrl, provider.protocol);
+    } else if (body.baseUrl === '' && provider.protocol !== 'openai-compatible') {
+      provider.baseUrl = provider.protocol === 'google-gemini' ? GEMINI_DEFAULT_BASE_URL : CF_DEFAULT_BASE_URL;
     }
     if (typeof body.apiKey === 'string' && body.apiKey) {
       provider.apiKey = body.apiKey;

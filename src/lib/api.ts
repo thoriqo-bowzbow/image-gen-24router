@@ -1,17 +1,11 @@
-import type { ProviderSummary } from '@/lib/providers/types';
+import type { ProviderSummary, ProviderProtocol, EnhanceConfig } from '@/lib/providers/types';
 
-export type { ProviderSummary };
+export type { ProviderSummary, ProviderProtocol, EnhanceConfig };
 
 export interface ModelInfo {
   id: string;
   object: string;
   owned_by: string;
-  capabilities?: string[];
-  max_image_size?: string;
-  step_range?: [number, number];
-  cfg_range?: [number, number];
-  max_batch?: number;
-  style_presets?: string[];
   description?: string;
 }
 
@@ -32,6 +26,17 @@ export interface ImageResult {
   url: string;
   revised_prompt?: string;
   b64_json?: string;
+  mime_type?: string;
+}
+
+export function imageDataUrl(img: ImageResult): string {
+  if (img.b64_json) return `data:${img.mime_type || 'image/webp'};base64,${img.b64_json}`;
+  return img.url;
+}
+
+export function imageExt(img: ImageResult): string {
+  if (!img.b64_json) return 'png';
+  return (img.mime_type || 'image/webp').split('/')[1] || 'png';
 }
 
 export interface GenerateResponse {
@@ -42,7 +47,9 @@ export interface GenerateResponse {
 export interface ProviderInputPayload {
   name?: string;
   baseUrl?: string;
+  protocol?: ProviderProtocol;
   apiKey?: string;
+  accountId?: string;
   enhanceModel?: string;
   models?: ModelInfo[];
   setActive?: boolean;
@@ -56,6 +63,7 @@ export interface TestResult {
 
 interface ProvidersListResponse {
   activeProviderId: string | null;
+  enhance: EnhanceConfig;
   providers: ProviderSummary[];
 }
 
@@ -100,20 +108,6 @@ export async function enhancePrompt(prompt: string): Promise<string> {
   return data.enhanced;
 }
 
-export async function saveImageToServer(
-  base64: string,
-  filename: string
-): Promise<string> {
-  const res = await fetch('/api/save', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ base64, filename }),
-  });
-  if (!res.ok) throw new Error(`Save failed: ${res.status}`);
-  const data = await res.json();
-  return data.url;
-}
-
 export const providersApi = {
   async list(): Promise<ProvidersListResponse> {
     return apiFetch<ProvidersListResponse>('/api/providers');
@@ -141,7 +135,20 @@ export const providersApi = {
     });
   },
 
-  async test(input: { providerId?: string; baseUrl?: string; apiKey?: string }): Promise<TestResult> {
+  async setEnhance(input: { providerId: string | null; model: string | null }): Promise<EnhanceConfig> {
+    return apiFetch<EnhanceConfig>('/api/providers/enhance', {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+  },
+
+  async test(input: {
+    providerId?: string;
+    protocol?: string;
+    baseUrl?: string;
+    apiKey?: string;
+    accountId?: string;
+  }): Promise<TestResult> {
     return apiFetch<TestResult>('/api/providers/test', {
       method: 'POST',
       body: JSON.stringify(input),

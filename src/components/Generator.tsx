@@ -10,6 +10,7 @@ import { useModels } from '@/hooks/useModels';
 import { useGeneration } from '@/hooks/useGeneration';
 import { useGallery } from '@/hooks/useGallery';
 import { getDefaultParams, providerName } from '@/lib/models';
+import { imageDataUrl } from '@/lib/api';
 import type { DefaultParams } from '@/lib/models';
 
 import { Wand2, Loader2, AlertCircle } from 'lucide-react';
@@ -25,14 +26,13 @@ export function Generator() {
   const [prompt, setPrompt] = useState('');
   const [enhancedPrompt, setEnhancedPrompt] = useState('');
   const [paramsOverride, setParamsOverride] = useState<DefaultParams | null>(null);
+  const [paramMode, setParamMode] = useState<'best' | 'advanced'>('best');
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   // Turunkan dari daftar model — otomatis memilih model pertama saat daftar termuat
   const activeModel = models.find((m) => m.id === selectedModelId) ?? models[0] ?? null;
   const selectedModel = activeModel?.id ?? '';
-  const selectedModelInfo = activeModel;
-  const params =
-    paramsOverride ??
-    (activeModel ? getDefaultParams(activeModel) : getDefaultParams({ id: '', owned_by: '', object: '' }));
+  const params = paramsOverride ?? getDefaultParams();
 
   const handleModelSelect = useCallback((modelId: string, _info: ModelInfo) => {
     setSelectedModelId(modelId);
@@ -43,12 +43,16 @@ export function Generator() {
     const finalPrompt = enhancedPrompt || prompt;
     if (!finalPrompt.trim() || !selectedModel) return;
 
-    await gen.generate({
-      model: selectedModel,
-      prompt: finalPrompt,
-      ...params,
-    });
-  }, [enhancedPrompt, prompt, selectedModel, gen, params]);
+    if (paramMode === 'best') {
+      await gen.generate({ model: selectedModel, prompt: finalPrompt });
+    } else {
+      await gen.generate({
+        model: selectedModel,
+        prompt: finalPrompt,
+        ...params,
+      });
+    }
+  }, [enhancedPrompt, prompt, selectedModel, gen, params, paramMode]);
 
   const handleReRun = useCallback(
     (data: { prompt: string; enhancedPrompt: string; model: string; params: DefaultParams }) => {
@@ -63,22 +67,26 @@ export function Generator() {
 
   const handleSaveToGallery = useCallback(async () => {
     if (!gen.result) return;
-    const images = gen.result.data.map((img) => ({
-      url: img.url,
-      thumbnail: img.b64_json
-        ? `data:image/webp;base64,${img.b64_json}`
-        : img.url,
-    }));
-    await gallery.save({
-      id: `gen_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      prompt,
-      enhancedPrompt: enhancedPrompt || prompt,
-      model: selectedModel,
-      provider: providerName(selectedModel),
-      params: { ...params },
-      images,
-      timestamp: Date.now(),
-    });
+    setSaveState('saving');
+    try {
+      const images = gen.result.data.map((img) => ({
+        url: img.url,
+        thumbnail: imageDataUrl(img),
+      }));
+      await gallery.save({
+        id: `gen_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        prompt,
+        enhancedPrompt: enhancedPrompt || prompt,
+        model: selectedModel,
+        provider: providerName(selectedModel),
+        params: { ...params },
+        images,
+        timestamp: Date.now(),
+      });
+      setSaveState('saved');
+    } catch {
+      setSaveState('error');
+    }
   }, [gen.result, prompt, enhancedPrompt, selectedModel, params, gallery]);
 
   return (
@@ -131,9 +139,33 @@ export function Generator() {
         />
       </div>
 
-      {selectedModelInfo && (
-        <ParamPanel model={selectedModelInfo} params={params} onChange={setParamsOverride} />
-      )}
+      <div className="flex flex-col gap-3">
+        <hr className="brutal-divider" />
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider mr-1">Kualitas</span>
+          <BrutalButton
+            size="sm"
+            variant={paramMode === 'best' ? 'accent' : 'default'}
+            onClick={() => setParamMode('best')}
+          >
+            Terbaik
+          </BrutalButton>
+          <BrutalButton
+            size="sm"
+            variant={paramMode === 'advanced' ? 'accent' : 'default'}
+            onClick={() => setParamMode('advanced')}
+          >
+            Advanced
+          </BrutalButton>
+        </div>
+        {paramMode === 'best' ? (
+          <p className="text-xs text-[var(--muted)] font-mono">
+            Pengaturan optimal bawaan model dipakai otomatis — tinggal tulis prompt dan generate.
+          </p>
+        ) : (
+          activeModel && <ParamPanel params={params} onChange={setParamsOverride} />
+        )}
+      </div>
 
       <BrutalButton
         variant="accent"
@@ -174,9 +206,23 @@ export function Generator() {
             onReRun={undefined}
             onDelete={undefined}
           />
-          <BrutalButton size="sm" onClick={handleSaveToGallery}>
-            Simpan ke Gallery
-          </BrutalButton>
+          <div className="flex items-center gap-3">
+            <BrutalButton size="sm" onClick={handleSaveToGallery} disabled={saveState === 'saving'}>
+              {saveState === 'saving' ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" /> Menyimpan...
+                </>
+              ) : (
+                'Simpan ke Gallery'
+              )}
+            </BrutalButton>
+            {saveState === 'saved' && (
+              <span className="text-xs font-mono text-[var(--fg)]">Tersimpan ke gallery ✓</span>
+            )}
+            {saveState === 'error' && (
+              <span className="text-xs font-mono text-[var(--accent)]">Gagal menyimpan — coba lagi</span>
+            )}
+          </div>
         </>
       )}
     </div>

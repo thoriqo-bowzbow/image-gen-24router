@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readProvidersFile } from '@/lib/providers/store';
-import { sanitizeBaseUrl } from '@/lib/providers/validate';
+import { resolveBaseUrl, CF_DEFAULT_BASE_URL } from '@/lib/providers/validate';
 import { resolveApiKey } from '@/lib/providers/adapter';
 
 interface TestInput {
   providerId?: string;
+  protocol?: string;
   baseUrl?: string;
   apiKey?: string;
+  accountId?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -18,6 +20,8 @@ export async function POST(request: NextRequest) {
   try {
     let baseUrl: string;
     let apiKey: string;
+    let protocol: string;
+    let accountId: string | undefined;
 
     if (body.providerId) {
       const data = await readProvidersFile();
@@ -27,17 +31,34 @@ export async function POST(request: NextRequest) {
       }
       baseUrl = provider.baseUrl;
       apiKey = resolveApiKey(provider);
+      protocol = provider.protocol;
+      accountId = provider.accountId;
     } else {
-      baseUrl = sanitizeBaseUrl(body.baseUrl);
+      protocol = body.protocol === 'google-gemini' ? 'google-gemini' : body.protocol === 'cloudflare-workers-ai' ? 'cloudflare-workers-ai' : 'openai-compatible';
+      baseUrl = resolveBaseUrl(body.baseUrl, protocol);
       apiKey = body.apiKey || '';
+      accountId = body.accountId;
     }
 
     const headers: Record<string, string> = {};
-    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-
+    let modelsPath = '/v1/models';
+    if (protocol === 'google-gemini') {
+      if (apiKey) headers['x-goog-api-key'] = apiKey;
+      modelsPath = '/models';
+    } else if (protocol === 'cloudflare-workers-ai') {
+      if (!accountId) {
+        return NextResponse.json({ ok: false, message: 'Account ID Cloudflare wajib diisi untuk test koneksi.' });
+      }
+      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+      baseUrl = (baseUrl || CF_DEFAULT_BASE_URL).replace(/\/+$/, '');
+      modelsPath = `/accounts/${encodeURIComponent(accountId)}/ai/models/search?per_page=1`;
+    } else {
+      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+      baseUrl = baseUrl.replace(/\/+$/, '').replace(/\/v1$/i, '');
+    }
     let res: Response;
     try {
-      res = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/models`, {
+      res = await fetch(`${baseUrl.replace(/\/+$/, '')}${modelsPath}`, {
         method: 'GET',
         headers,
         signal: AbortSignal.timeout(8000),

@@ -1,6 +1,8 @@
 import type { ImageGenerateParams, GenerateResponse } from '@/lib/api';
 import type { ProviderConfig } from './types';
 import { openAICompatibleAdapter } from './openaiCompatible';
+import { googleGeminiAdapter } from './gemini';
+import { cloudflareWorkersAiAdapter } from './cloudflare';
 
 export class ProviderUpstreamError extends Error {
   constructor(
@@ -18,6 +20,8 @@ export interface ImageProviderAdapter {
 
 const ADAPTERS: Record<string, ImageProviderAdapter> = {
   'openai-compatible': openAICompatibleAdapter,
+  'google-gemini': googleGeminiAdapter,
+  'cloudflare-workers-ai': cloudflareWorkersAiAdapter,
 };
 
 export function getAdapter(config: ProviderConfig): ImageProviderAdapter {
