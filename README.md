@@ -92,6 +92,10 @@ src/
     └── store.ts               # data/providers.json persistence
 ```
 
+## Acknowledgements
+
+This project was developed with the assistance of [CommandCodeBot](https://github.com/CommandCodeBot) — an AI coding agent (Command Code CLI) that helped architect, implement, test, and document the codebase.
+
 ## License
 
 [MIT](LICENSE)
