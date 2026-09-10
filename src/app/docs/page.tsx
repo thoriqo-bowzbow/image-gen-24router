@@ -33,7 +33,7 @@ export default function DocsPage() {
         <h1 className="text-3xl font-bold font-ui tracking-tight mb-1">
           <span className="bg-[var(--fg)] text-[var(--bg)] px-2 py-1">DOCS</span>
         </h1>
-        <p className="text-sm text-[var(--muted)] font-mono">
+        <p className="text-sm text-[var(--muted)] font-mono mt-1.5">
           Panduan penggunaan: dari provider kosong sampai berhasil generate gambar. Untuk instalasi &
           deploy, lihat README.
         </p>

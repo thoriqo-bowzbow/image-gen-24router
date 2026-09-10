@@ -94,7 +94,7 @@ export function Generator() {
         <h1 className="text-3xl font-bold font-ui tracking-tight mb-1">
           <span className="bg-[var(--fg)] text-[var(--bg)] px-2 py-1">TEXT → IMAGE</span>
         </h1>
-        <p className="text-xs text-[var(--muted)] font-mono">
+        <p className="text-xs text-[var(--muted)] font-mono mt-1.5">
           OpenAI-compatible • Multi-provider • Neo-Brutalist
         </p>
       </div>
